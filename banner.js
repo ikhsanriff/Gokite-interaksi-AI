@@ -1,0 +1,1 @@
+export const banner = "A N A N G SI PALING J E P E!";
