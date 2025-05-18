@@ -98,7 +98,7 @@ const AI_ENDPOINTS = {
         "agent_id": "deployment_ECz5O55dH0dBQaGKuT47kzYC",
         "name": "Crypto Price Assistant",
         "questions": [] // Pertanyaan diambil dari file
-    }
+    },
 };
 
 class WalletStatistics {
@@ -210,33 +210,46 @@ class KiteAIAutomation {
         return false;
     }
 
-    async getRecentTransactions() {
-        this.logMessage('🔍', 'Scanning recent transactions...', 'white');
-        const url = 'https://testnet.kitescan.ai/api/v2/advanced-filters';
-        const params = new URLSearchParams({
-            transaction_types: 'coin_transfer',
-            age: '5m'
+async getRecentTransactions() {
+    this.logMessage('🔍', 'Scanning recent transactions...', 'white');
+    const url = 'https://testnet.kitescan.ai/api/v2/advanced-filters ';
+    const params = new URLSearchParams({
+        transaction_types: 'coin_transfer',
+        age: '5m'
+    });
+
+    try {
+        const agent = createAgent(this.getCurrentProxy());
+        const response = await fetch(`${url}?${params}`, {
+            agent,
+            headers: {
+                'accept': '*/*',
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
         });
 
-        try {
-            const agent = createAgent(this.getCurrentProxy());
-            const response = await fetch(`${url}?${params}`, {
-                agent,
-                headers: {
-                    'accept': '*/*',
-                    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-            });
-            const data = await response.json();
-            const hashes = data.items?.map(item => item.hash) || [];
-            this.logMessage('📊', `Found ${hashes.length} recent transactions`, 'magenta');
-            return hashes;
-        } catch (e) {
-            this.logMessage('❌', `Transaction fetch error: ${e}`, 'red');
+        // Cek apakah respons adalah HTML
+        const text = await response.text();
+
+        // Coba parse sebagai JSON
+        if (text.trim().startsWith('<')) {
+            this.logMessage('⚠️', 'Server returned HTML instead of JSON. Skipping...', 'yellow');
+            this.logMessage('📄', `Response preview: ${text.substring(0, 100)}...`, 'gray');
             this.rotateProxy();
             return [];
         }
+
+        const data = JSON.parse(text);
+        const hashes = data.items?.map(item => item.hash) || [];
+        this.logMessage('📊', `Found ${hashes.length} recent transactions`, 'magenta');
+        return hashes;
+
+    } catch (e) {
+        this.logMessage('❌', `Transaction fetch error: ${e.message}`, 'red');
+        this.rotateProxy();
+        return [];
     }
+}
 
     async sendAiQuery(endpoint, message) {
         const agent = createAgent(this.getCurrentProxy());
@@ -349,6 +362,8 @@ class KiteAIAutomation {
                 this.logMessage('🔄', `Interaction #${interactionCount}`, 'magenta');
                 this.logMessage('📈', `Progress: ${this.session.dailyPoints + this.POINTS_PER_INTERACTION}/${this.MAX_DAILY_POINTS} points`, 'cyan');
                 this.logMessage('⏳', `Next Reset: ${this.session.nextResetTime.toISOString().replace('T', ' ').slice(0, 19)}`, 'cyan');
+
+                const transactions = await this.getRecentTransactions();
 
                 const endpoints = Object.keys(AI_ENDPOINTS);
                 const endpoint = endpoints[Math.floor(Math.random() * endpoints.length)];
