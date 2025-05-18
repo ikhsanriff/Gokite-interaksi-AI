@@ -98,11 +98,6 @@ const AI_ENDPOINTS = {
         "agent_id": "deployment_ECz5O55dH0dBQaGKuT47kzYC",
         "name": "Crypto Price Assistant",
         "questions": [] // Pertanyaan diambil dari file
-    },
-    "https://deployment-sofftlsf9z4fya3qchykaanq.stag-vxzy.zettablock.com/main": {
-        "agent_id": "deployment_SoFftlsf9z4fyA3QCHYkaANq",
-        "name": "Transaction Analyzer",
-        "questions": [] // Pertanyaan diambil dari file
     }
 };
 
@@ -354,10 +349,6 @@ class KiteAIAutomation {
                 this.logMessage('🔄', `Interaction #${interactionCount}`, 'magenta');
                 this.logMessage('📈', `Progress: ${this.session.dailyPoints + this.POINTS_PER_INTERACTION}/${this.MAX_DAILY_POINTS} points`, 'cyan');
                 this.logMessage('⏳', `Next Reset: ${this.session.nextResetTime.toISOString().replace('T', ' ').slice(0, 19)}`, 'cyan');
-
-                const transactions = await this.getRecentTransactions();
-                AI_ENDPOINTS["https://deployment-sofftlsf9z4fya3qchykaanq.stag-vxzy.zettablock.com/main"].questions = 
-                    transactions.map(tx => `Analyze this transaction in detail: ${tx}`);
 
                 const endpoints = Object.keys(AI_ENDPOINTS);
                 const endpoint = endpoints[Math.floor(Math.random() * endpoints.length)];
